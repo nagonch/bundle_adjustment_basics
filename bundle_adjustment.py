@@ -7,6 +7,7 @@ import open3d as o3d
 import viser
 import time
 from scipy.spatial.transform import Rotation as R
+from scipy.sparse import lil_matrix
 
 
 def read_bal_data(file_name):
@@ -52,7 +53,7 @@ def visualize_data(points_3d, camera_params):
 
     colors = np.zeros_like(points_3d)
     colors[:, 0] = 255
-    server.scene.add_point_cloud("my_point_cloud", points_3d, colors, point_size=0.05)
+    server.scene.add_point_cloud("my_point_cloud", points_3d, colors, point_size=0.01)
 
     for i, param in enumerate(camera_params):
         server.scene.add_camera_frustum(
@@ -68,6 +69,66 @@ def visualize_data(points_3d, camera_params):
         time.sleep(2.0)
 
 
+def rotate(points, rot_vecs):
+    """Rotate points by given rotation vectors.
+
+    Rodrigues' rotation formula is used.
+    """
+    theta = np.linalg.norm(rot_vecs, axis=1)[:, np.newaxis]
+    with np.errstate(invalid="ignore"):
+        v = rot_vecs / theta
+        v = np.nan_to_num(v)
+    dot = np.sum(points * v, axis=1)[:, np.newaxis]
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+
+    return (
+        cos_theta * points + sin_theta * np.cross(v, points) + dot * (1 - cos_theta) * v
+    )
+
+
+def project(points, camera_params):
+    """Convert 3-D points to 2-D by projecting onto images."""
+    points_proj = rotate(points, camera_params[:, :3])
+    points_proj += camera_params[:, 3:6]
+    points_proj = -points_proj[:, :2] / points_proj[:, 2, np.newaxis]
+    f = camera_params[:, 6]
+    k1 = camera_params[:, 7]
+    k2 = camera_params[:, 8]
+    n = np.sum(points_proj**2, axis=1)
+    r = 1 + k1 * n + k2 * n**2
+    points_proj *= (r * f)[:, np.newaxis]
+    return points_proj
+
+
+def fun(params, n_cameras, n_points, camera_indices, point_indices, points_2d):
+    """Compute residuals.
+
+    `params` contains camera parameters and 3-D coordinates.
+    """
+    camera_params = params[: n_cameras * 9].reshape((n_cameras, 9))
+    points_3d = params[n_cameras * 9 :].reshape((n_points, 3))
+    points_proj = project(points_3d[point_indices], camera_params[camera_indices])
+    return (points_proj - points_2d).ravel()
+
+
+def bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices):
+    m = camera_indices.size * 2
+    n = n_cameras * 9 + n_points * 3
+    A = lil_matrix((m, n), dtype=int)
+
+    i = np.arange(camera_indices.size)
+    for s in range(9):
+        A[2 * i, camera_indices * 9 + s] = 1
+        A[2 * i + 1, camera_indices * 9 + s] = 1
+
+    for s in range(3):
+        A[2 * i, n_cameras * 9 + point_indices * 3 + s] = 1
+        A[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = 1
+
+    return A
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "http://grail.cs.washington.edu/projects/bal/data/ladybug/problem-49-7776-pre.txt.bz2"
@@ -78,7 +139,6 @@ if __name__ == "__main__":
     camera_params, points_3d, camera_indices, point_indices, points_2d = read_bal_data(
         filename
     )
-
     # INSPECT DATA
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
@@ -92,4 +152,30 @@ if __name__ == "__main__":
     print("Total number of residuals: {}".format(m))
 
     # VISUALIZE DATA
+    # visualize_data(points_3d, camera_params)
+
+    x0 = np.hstack((camera_params.ravel(), points_3d.ravel()))
+    f0 = fun(x0, n_cameras, n_points, camera_indices, point_indices, points_2d)
+    A = bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices)
+
+    import time
+    from scipy.optimize import least_squares
+
+    t0 = time.time()
+    res = least_squares(
+        fun,
+        x0,
+        jac_sparsity=A,
+        verbose=2,
+        x_scale="jac",
+        ftol=1e-4,
+        method="trf",
+        args=(n_cameras, n_points, camera_indices, point_indices, points_2d),
+    )
+    x = res.x
+    print(np.linalg.norm(x - x0))
+    t1 = time.time()
+
+    camera_params = x[: 9 * n_cameras].reshape(n_cameras, 9)
+    points_3d = x[9 * n_cameras :].reshape(n_points, 3)
     visualize_data(points_3d, camera_params)
