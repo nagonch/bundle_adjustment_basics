@@ -64,7 +64,7 @@ def visualize_data(points_3d, camera_params):
             name=f"{i}",
             aspect=1,
             fov=fov,
-            scale=0.05,
+            scale=0.1,
             wxyz=R.from_euler("xyz", param[:3]).as_quat(),
             position=param[3:6],
         )
@@ -135,8 +135,8 @@ def bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indice
 
 if __name__ == "__main__":
     # LOAD DATA
-    dataset_url = "http://grail.cs.washington.edu/projects/bal/data/ladybug/problem-49-7776-pre.txt.bz2"
-    filename = "dataset.txt.bz2"
+    dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
+    filename = "dubrovnik.txt.bz2"
     if not os.path.isfile(filename):
         urllib.request.urlretrieve(dataset_url, filename)
 
