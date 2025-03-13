@@ -32,6 +32,7 @@ def read_bal_data(file_name):
 
 
 if __name__ == "__main__":
+    # LOAD DATA
     dataset_url = "http://grail.cs.washington.edu/projects/bal/data/ladybug/problem-49-7776-pre.txt.bz2"
     filename = "dataset.txt.bz2"
     if not os.path.isfile(filename):
@@ -40,10 +41,15 @@ if __name__ == "__main__":
     camera_params, points_3d, camera_indices, point_indices, points_2d = read_bal_data(
         filename
     )
-    print(
-        camera_params.shape,
-        points_3d.shape,
-        camera_indices.shape,
-        point_indices.shape,
-        points_2d.shape,
-    )
+
+    # INSPECT DATA
+    n_cameras = camera_params.shape[0]
+    n_points = points_3d.shape[0]
+
+    n = 9 * n_cameras + 3 * n_points
+    m = 2 * points_2d.shape[0]
+
+    print("n_cameras: {}".format(n_cameras))
+    print("n_points: {}".format(n_points))
+    print("Total number of parameters: {}".format(n))
+    print("Total number of residuals: {}".format(m))
