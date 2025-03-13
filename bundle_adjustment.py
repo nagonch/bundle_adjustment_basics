@@ -133,6 +133,33 @@ def bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indice
     return A
 
 
+def get_opt_x(
+    camera_params,
+    points_3d,
+    camera_indices,
+    point_indices,
+    points_2d,
+    n_cameras,
+    n_points,
+):
+    x0 = np.hstack((camera_params.ravel(), points_3d.ravel()))
+    f0 = fun(x0, n_cameras, n_points, camera_indices, point_indices, points_2d)
+    A = bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices)
+
+    res = least_squares(
+        fun,
+        x0,
+        jac_sparsity=A,
+        verbose=2,
+        x_scale="jac",
+        ftol=1e-4,
+        method="trf",
+        args=(n_cameras, n_points, camera_indices, point_indices, points_2d),
+    )
+    x = res.x
+    return x
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -161,26 +188,18 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
 
-    x0 = np.hstack((camera_params.ravel(), points_3d.ravel()))
-    f0 = fun(x0, n_cameras, n_points, camera_indices, point_indices, points_2d)
-    A = bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices)
-
-    t0 = time.time()
-    res = least_squares(
-        fun,
-        x0,
-        jac_sparsity=A,
-        verbose=2,
-        x_scale="jac",
-        ftol=1e-4,
-        method="trf",
-        args=(n_cameras, n_points, camera_indices, point_indices, points_2d),
+    x_opt = get_opt_x(
+        camera_params,
+        points_3d,
+        camera_indices,
+        point_indices,
+        points_2d,
+        n_cameras,
+        n_points,
     )
-    x = res.x
-    t1 = time.time()
 
-    camera_params = x[: 9 * n_cameras].reshape(n_cameras, 9)
-    points_3d = x[9 * n_cameras :].reshape(n_points, 3)
+    camera_params = x_opt[: 9 * n_cameras].reshape(n_cameras, 9)
+    points_3d = x_opt[9 * n_cameras :].reshape(n_points, 3)
     np.save("result_points.npy", points_3d)
     np.save("camera_params.npy", camera_params)
     try:
