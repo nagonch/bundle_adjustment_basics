@@ -3,6 +3,7 @@ import urllib.request
 import bz2
 import os
 import numpy as np
+import open3d as o3d
 
 
 def read_bal_data(file_name):
@@ -31,6 +32,14 @@ def read_bal_data(file_name):
     return camera_params, points_3d, camera_indices, point_indices, points_2d
 
 
+def visualize_data(points_3d):
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(points_3d)
+    _, ind = point_cloud.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
+    point_cloud = point_cloud.select_by_index(ind)
+    o3d.visualization.draw_geometries([point_cloud])
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "http://grail.cs.washington.edu/projects/bal/data/ladybug/problem-49-7776-pre.txt.bz2"
@@ -53,3 +62,6 @@ if __name__ == "__main__":
     print("n_points: {}".format(n_points))
     print("Total number of parameters: {}".format(n))
     print("Total number of residuals: {}".format(m))
+
+    # VISUALIZE DATA
+    visualize_data(points_3d)
