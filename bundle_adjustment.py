@@ -6,6 +6,7 @@ import numpy as np
 import open3d as o3d
 import viser
 import time
+from scipy.spatial.transform import Rotation as R
 
 
 def read_bal_data(file_name):
@@ -34,7 +35,7 @@ def read_bal_data(file_name):
     return camera_params, points_3d, camera_indices, point_indices, points_2d
 
 
-def visualize_data(points_3d):
+def visualize_data(points_3d, camera_params):
     point_cloud = o3d.geometry.PointCloud()
     point_cloud.points = o3d.utility.Vector3dVector(points_3d)
     _, ind = point_cloud.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
@@ -50,7 +51,18 @@ def visualize_data(points_3d):
         gui_info.disabled = True
 
     colors = np.zeros_like(points_3d)
+    colors[:, 0] = 255
     server.scene.add_point_cloud("my_point_cloud", points_3d, colors, point_size=0.05)
+
+    for i, param in enumerate(camera_params):
+        server.scene.add_camera_frustum(
+            name=f"{i}",
+            aspect=1,
+            fov=np.pi / 3,
+            scale=0.05,
+            wxyz=R.from_euler("xyz", param[:3]).as_quat(),
+            position=param[3:6],
+        )
 
     while True:
         time.sleep(2.0)
@@ -80,4 +92,4 @@ if __name__ == "__main__":
     print("Total number of residuals: {}".format(m))
 
     # VISUALIZE DATA
-    visualize_data(points_3d)
+    visualize_data(points_3d, camera_params)
