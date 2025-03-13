@@ -58,10 +58,12 @@ def visualize_data(points_3d, camera_params):
     server.scene.add_point_cloud("my_point_cloud", points_3d, colors, point_size=0.01)
 
     for i, param in enumerate(camera_params):
+        focal_len = param[6]
+        fov = 2 * np.arctan(1024 / (2 * focal_len))
         server.scene.add_camera_frustum(
             name=f"{i}",
             aspect=1,
-            fov=np.pi / 3,
+            fov=fov,
             scale=0.05,
             wxyz=R.from_euler("xyz", param[:3]).as_quat(),
             position=param[3:6],
