@@ -4,6 +4,8 @@ import bz2
 import os
 import numpy as np
 import open3d as o3d
+import viser
+import time
 
 
 def read_bal_data(file_name):
@@ -37,7 +39,21 @@ def visualize_data(points_3d):
     point_cloud.points = o3d.utility.Vector3dVector(points_3d)
     _, ind = point_cloud.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
     point_cloud = point_cloud.select_by_index(ind)
-    o3d.visualization.draw_geometries([point_cloud])
+    points_3d = np.array(point_cloud.points)
+    server = viser.ViserServer()
+    server.scene.world_axes.visible = True
+
+    @server.on_client_connect
+    def _(client: viser.ClientHandle) -> None:
+        # Show the client ID in the GUI.
+        gui_info = client.gui.add_text("Client ID", initial_value=str(client.client_id))
+        gui_info.disabled = True
+
+    colors = np.zeros_like(points_3d)
+    server.scene.add_point_cloud("my_point_cloud", points_3d, colors, point_size=0.05)
+
+    while True:
+        time.sleep(2.0)
 
 
 if __name__ == "__main__":
