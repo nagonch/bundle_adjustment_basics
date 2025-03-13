@@ -156,7 +156,10 @@ if __name__ == "__main__":
     print("Total number of residuals: {}".format(m))
 
     # VISUALIZE DATA
-    # visualize_data(points_3d, camera_params)
+    try:
+        visualize_data(points_3d, camera_params)
+    except KeyboardInterrupt:
+        pass
 
     x0 = np.hstack((camera_params.ravel(), points_3d.ravel()))
     f0 = fun(x0, n_cameras, n_points, camera_indices, point_indices, points_2d)
@@ -180,4 +183,7 @@ if __name__ == "__main__":
     points_3d = x[9 * n_cameras :].reshape(n_points, 3)
     np.save("result_points.npy", points_3d)
     np.save("camera_params.npy", camera_params)
-    visualize_data(points_3d, camera_params)
+    try:
+        visualize_data(points_3d, camera_params)
+    except KeyboardInterrupt:
+        pass
