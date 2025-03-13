@@ -8,6 +8,8 @@ import viser
 import time
 from scipy.spatial.transform import Rotation as R
 from scipy.sparse import lil_matrix
+import time
+from scipy.optimize import least_squares
 
 
 def read_bal_data(file_name):
@@ -158,9 +160,6 @@ if __name__ == "__main__":
     f0 = fun(x0, n_cameras, n_points, camera_indices, point_indices, points_2d)
     A = bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices)
 
-    import time
-    from scipy.optimize import least_squares
-
     t0 = time.time()
     res = least_squares(
         fun,
@@ -173,9 +172,10 @@ if __name__ == "__main__":
         args=(n_cameras, n_points, camera_indices, point_indices, points_2d),
     )
     x = res.x
-    print(np.linalg.norm(x - x0))
     t1 = time.time()
 
     camera_params = x[: 9 * n_cameras].reshape(n_cameras, 9)
     points_3d = x[9 * n_cameras :].reshape(n_points, 3)
+    np.save("result_points.npy", points_3d)
+    np.save("camera_params.npy", camera_params)
     visualize_data(points_3d, camera_params)
