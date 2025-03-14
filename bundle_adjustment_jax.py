@@ -5,6 +5,8 @@ import urllib
 from jax.scipy.spatial.transform import Rotation as R
 import jax
 
+jax.config.update("jax_enable_x64", True)
+
 
 def get_x_vector(camera_params, points_3d):
     return jnp.hstack((camera_params.ravel(), points_3d.ravel()))
@@ -17,11 +19,8 @@ def get_params_and_points(x_vector, n_cameras, n_points):
 
 
 def project(points, camera_params):
-    rotations = R.from_euler("xyz", camera_params[:, :3]).as_matrix()
-    print(points.shape, rotations.shape)
+    rotations = R.from_rotvec(camera_params[:, :3]).as_matrix()
     points_proj = jnp.matvec(rotations, points)
-    print(points_proj)
-    raise
     points_proj += camera_params[:, 3:6]
     points_proj = -points_proj[:, :2] / points_proj[:, 2, jnp.newaxis]
     f = camera_params[:, 6]
@@ -49,8 +48,11 @@ if __name__ == "__main__":
 
     data = read_bal_data(filename)
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
-        jnp.array(array) for array in data
+        jnp.array(array, dtype=jnp.float64) for array in data
     ]
+    camera_indices, point_indices = camera_indices.astype(
+        jnp.int32
+    ), point_indices.astype(jnp.int32)
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
