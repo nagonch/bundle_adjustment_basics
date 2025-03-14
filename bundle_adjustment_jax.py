@@ -50,7 +50,7 @@ def loss(
     return error
 
 
-def optimize(
+def optimize_GD(
     camera_params,
     points_3d,
     camera_indices,
