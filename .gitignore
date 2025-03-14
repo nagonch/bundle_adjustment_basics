@@ -2,3 +2,4 @@ venv/
 *.bz2
 *.npy
 __pycache__/
+*.txt

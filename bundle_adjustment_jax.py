@@ -105,7 +105,7 @@ if __name__ == "__main__":
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
-    camera_params_optimized, points_3d_optimized = optimize(
+    camera_params_optimized, points_3d_optimized = optimize_GD(
         camera_params,
         points_3d,
         camera_indices,
