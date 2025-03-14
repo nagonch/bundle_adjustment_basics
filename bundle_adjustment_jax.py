@@ -5,6 +5,16 @@ import urllib
 from jax.scipy.spatial.transform import Rotation as R
 
 
+def get_x_vector(camera_params, points_3d):
+    return jnp.hstack((camera_params.ravel(), points_3d.ravel()))
+
+
+def get_params_and_points(x_vector, n_cameras, n_points):
+    camera_params = x_vector[: n_cameras * 9].reshape((n_cameras, 9))
+    points_3d = x_vector[n_cameras * 9 :].reshape((n_points, 3))
+    return camera_params, points_3d
+
+
 def project(points, camera_params):
     rotations = R.from_euler("xyz", camera_params[:, :3]).as_matrix()
     points_proj = jnp.matmul(rotations, points[..., None]).squeeze(-1)
@@ -19,6 +29,9 @@ def project(points, camera_params):
     return points_proj
 
 
+# def loss():
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -30,4 +43,9 @@ if __name__ == "__main__":
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
         jnp.array(array) for array in data
     ]
-    projected_points = project(points_3d[point_indices], camera_params[camera_indices])
+    n_points = points_3d.shape[0]
+    n_cameras = camera_params.shape[0]
+
+    x_vector = get_x_vector(camera_params, points_3d)
+    camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
+    # projected_points = project(points_3d[point_indices], camera_params[camera_indices])
