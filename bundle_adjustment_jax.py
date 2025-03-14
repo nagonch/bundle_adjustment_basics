@@ -39,6 +39,34 @@ def loss(x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
     return error
 
 
+def optimize(
+    camera_params,
+    points_3d,
+    camera_indices,
+    point_indices,
+    points_2d,
+    n_cameras,
+    n_points,
+    learning_rate=1e-3,
+    ftol=1e-4,
+    max_iter=1000,
+):
+    x_vector = get_x_vector(camera_params, points_3d)
+    forward = jax.value_and_grad(loss)
+    loss_prev = jnp.inf
+    for i in range(max_iter):
+        loss_val, gradient = forward(
+            x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
+        )
+        print(f"{i} loss: {loss_val}")
+        loss_drop = loss_prev - loss_val
+        print(gradient)
+        x_vector -= gradient * learning_rate
+        if loss_drop <= ftol:
+            break
+    return x_vector
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -56,8 +84,13 @@ if __name__ == "__main__":
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
-    x_vector = get_x_vector(camera_params, points_3d)
-    error = loss(
-        x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
+    camera_params_optimized, points_3d_optimized = optimize(
+        camera_params,
+        points_3d,
+        camera_indices,
+        point_indices,
+        points_2d,
+        n_cameras,
+        n_points,
     )
-    print(error)
+    print(camera_params_optimized, points_3d_optimized)
