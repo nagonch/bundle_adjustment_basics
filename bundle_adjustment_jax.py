@@ -3,6 +3,7 @@ from bundle_adjustment import read_bal_data, visualize_data
 import os
 import urllib
 from jax.scipy.spatial.transform import Rotation as R
+import jax
 
 
 def get_x_vector(camera_params, points_3d):
@@ -17,7 +18,10 @@ def get_params_and_points(x_vector, n_cameras, n_points):
 
 def project(points, camera_params):
     rotations = R.from_euler("xyz", camera_params[:, :3]).as_matrix()
-    points_proj = jnp.matmul(rotations, points[..., None]).squeeze(-1)
+    print(points.shape, rotations.shape)
+    points_proj = jnp.matvec(rotations, points)
+    print(points_proj)
+    raise
     points_proj += camera_params[:, 3:6]
     points_proj = -points_proj[:, :2] / points_proj[:, 2, jnp.newaxis]
     f = camera_params[:, 6]
@@ -29,7 +33,11 @@ def project(points, camera_params):
     return points_proj
 
 
-# def loss():
+def loss(x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points):
+    camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
+    projected_points = project(points_3d[point_indices], camera_params[camera_indices])
+    error = (jnp.linalg.norm(projected_points - points_2d, axis=1) ** 2).sum()
+    return error
 
 
 if __name__ == "__main__":
@@ -43,9 +51,11 @@ if __name__ == "__main__":
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
         jnp.array(array) for array in data
     ]
-    n_points = points_3d.shape[0]
     n_cameras = camera_params.shape[0]
+    n_points = points_3d.shape[0]
 
     x_vector = get_x_vector(camera_params, points_3d)
-    camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
-    # projected_points = project(points_3d[point_indices], camera_params[camera_indices])
+    error = loss(
+        x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
+    )
+    print(error)
