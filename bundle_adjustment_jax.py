@@ -5,6 +5,7 @@ import urllib
 from jax.scipy.spatial.transform import Rotation as R
 import jax
 import optax
+import jaxopt
 
 jax.config.update("jax_enable_x64", True)
 
@@ -88,6 +89,30 @@ def optimize_GD(
     return camera_params_optimized, points_3d_optimized
 
 
+def optimize_GN(
+    camera_params,
+    points_3d,
+    camera_indices,
+    point_indices,
+    points_2d,
+    n_cameras,
+    n_points,
+    ftol=1e-4,
+):
+    x_vector = get_x_vector(camera_params, points_3d)
+    solver = jaxopt.GaussNewton(loss, tol=ftol, verbose=True)
+    x_vector = solver.run(
+        init_params=x_vector,
+        camera_indices=camera_indices,
+        point_indices=point_indices,
+        points_2d=points_2d,
+        n_cameras=n_cameras,
+        n_points=n_points,
+        aggregate_loss=False,
+    )
+    return x_vector
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -105,7 +130,7 @@ if __name__ == "__main__":
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
-    camera_params_optimized, points_3d_optimized = optimize_GD(
+    camera_params_optimized, points_3d_optimized = optimize_GN(
         camera_params,
         points_3d,
         camera_indices,
