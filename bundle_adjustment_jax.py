@@ -133,10 +133,5 @@ if __name__ == "__main__":
     camera_params_optimized, points_3d_optimized = optimize_GN(
         camera_params,
         points_3d,
-        camera_indices,
-        point_indices,
-        points_2d,
-        n_cameras,
-        n_points,
     )
     print(camera_params_optimized, points_3d_optimized)
