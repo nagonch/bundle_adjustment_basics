@@ -89,26 +89,26 @@ def optimize_GD(
     return camera_params_optimized, points_3d_optimized
 
 
+def loss_GN(
+    x_vector,
+):
+    camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
+    projected_points = project(points_3d[point_indices], camera_params[camera_indices])
+    error = jnp.linalg.norm(projected_points - points_2d, axis=1) ** 2
+    error = error.sum()
+    return error
+
+
 def optimize_GN(
     camera_params,
     points_3d,
-    camera_indices,
-    point_indices,
-    points_2d,
-    n_cameras,
-    n_points,
     ftol=1e-4,
 ):
     x_vector = get_x_vector(camera_params, points_3d)
-    solver = jaxopt.GaussNewton(loss, tol=ftol, verbose=True)
+    solver = jaxopt.GaussNewton(loss, tol=ftol, verbose=True, jit=False)
+    print(solver)
     x_vector = solver.run(
         init_params=x_vector,
-        camera_indices=camera_indices,
-        point_indices=point_indices,
-        points_2d=points_2d,
-        n_cameras=n_cameras,
-        n_points=n_points,
-        aggregate_loss=False,
     )
     return x_vector
 
