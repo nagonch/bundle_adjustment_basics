@@ -106,11 +106,13 @@ def optimize_GN(
 ):
     x_vector = get_x_vector(camera_params, points_3d)
     solver = jaxopt.GaussNewton(loss_jaxopt, tol=ftol, verbose=True, jit=False)
-    print(solver)
-    x_vector = solver.run(
+    params, state = solver.run(
         init_params=x_vector,
     )
-    return x_vector
+    camera_params_optimized, points_3d_optimized = get_params_and_points(
+        params, n_cameras, n_points
+    )
+    return camera_params_optimized, points_3d_optimized
 
 
 if __name__ == "__main__":
