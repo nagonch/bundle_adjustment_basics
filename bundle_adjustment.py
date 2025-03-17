@@ -10,6 +10,8 @@ from scipy.spatial.transform import Rotation as R
 from scipy.sparse import lil_matrix
 import time
 from scipy.optimize import least_squares
+from scipy.sparse.linalg import lsqr
+import scipy.sparse as sp
 
 
 def read_bal_data(file_name):
@@ -116,19 +118,21 @@ def fun(params, n_cameras, n_points, camera_indices, point_indices, points_2d):
     return (points_proj - points_2d).ravel()
 
 
-def bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices):
+def bundle_adjustment_sparsity(
+    n_cameras, n_points, camera_indices, point_indices, diff=None
+):
     m = camera_indices.size * 2
     n = n_cameras * 9 + n_points * 3
     A = lil_matrix((m, n), dtype=int)
+    if diff is None:
+        i = np.arange(camera_indices.size)
+        for s in range(9):
+            A[2 * i, camera_indices * 9 + s] = 1
+            A[2 * i + 1, camera_indices * 9 + s] = 1
 
-    i = np.arange(camera_indices.size)
-    for s in range(9):
-        A[2 * i, camera_indices * 9 + s] = 1
-        A[2 * i + 1, camera_indices * 9 + s] = 1
-
-    for s in range(3):
-        A[2 * i, n_cameras * 9 + point_indices * 3 + s] = 1
-        A[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = 1
+        for s in range(3):
+            A[2 * i, n_cameras * 9 + point_indices * 3 + s] = 1
+            A[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = 1
 
     return A
 
@@ -160,6 +164,43 @@ def get_opt_x_trf(
     return x
 
 
+def get_opt_x_LM(
+    camera_params,
+    points_3d,
+    camera_indices,
+    point_indices,
+    points_2d,
+    n_cameras,
+    n_points,
+    ftol=1e-4,
+    max_iter=1000,
+    mu=0.1,
+):
+    x_params = np.hstack((camera_params.ravel(), points_3d.ravel()))
+    residual = fun(
+        x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
+    )
+    J = bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices)
+    loss_prev = residual.sum()
+    loss_prev += 2 * ftol * loss_prev
+    for i in range(max_iter):
+        JT_r = J.T @ residual
+        JtJ = J.T @ J
+        delta = lsqr(JtJ + mu * sp.eye(JtJ.shape[0]), -JT_r)[0]
+        x_params += delta
+        residual = fun(
+            x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
+        )
+        loss_val = residual.sum()
+        print(i, loss_val)
+        loss_drop = np.abs(loss_prev - loss_val)
+        if loss_drop <= ftol * loss_val:
+            break
+        else:
+            loss_prev = loss_val
+    return x_params
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -188,7 +229,7 @@ if __name__ == "__main__":
     # except KeyboardInterrupt:
     #     pass
 
-    x_opt = get_opt_x_trf(
+    x_opt = get_opt_x_LM(
         camera_params,
         points_3d,
         camera_indices,
