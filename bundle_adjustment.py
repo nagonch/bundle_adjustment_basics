@@ -133,6 +133,17 @@ def bundle_adjustment_sparsity(
         for s in range(3):
             A[2 * i, n_cameras * 9 + point_indices * 3 + s] = 1
             A[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = 1
+    else:
+        i = np.arange(camera_indices.size)
+        for s in range(9):
+            A[2 * i, camera_indices * 9 + s] = 1  # 2D x to camera params
+            A[2 * i + 1, camera_indices * 9 + s] = 1  # 2D y to camera params
+
+        for s in range(3):
+            A[2 * i, n_cameras * 9 + point_indices * 3 + s] = 1  # 2D x to 3D point dims
+            A[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = (
+                1  # 2D y to 3D point dims
+            )
 
     return A
 
