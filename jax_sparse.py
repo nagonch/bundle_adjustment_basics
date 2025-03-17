@@ -36,7 +36,6 @@ def fun(params, n_cameras, n_points, camera_indices, point_indices, points_2d):
     params, points = get_params_and_points(params, n_cameras, n_points)
     points_proj = project(points[point_indices], params[camera_indices])
     result = (points_proj - points_2d).ravel()
-    print(result)
     return result
 
 
@@ -86,7 +85,7 @@ def get_opt_x_LM(
     n_points,
     ftol=1e-4,
     max_iter=1000,
-    mu=10,
+    mu=1000,
 ):
     x_params = get_x_vector(camera_params, points_3d)
     residual = res_prev = fun(
@@ -125,12 +124,12 @@ if __name__ == "__main__":
     if not os.path.isfile(filename):
         urllib.request.urlretrieve(dataset_url, filename)
 
-    N_POINTS = 10000
-
     data = read_bal_data(filename)
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
         np.array(array, dtype=np.float64) for array in data
     ]
+    # N_POINTS = points_2d.shape[0]
+    N_POINTS = 10000
     inds = np.arange(points_2d.shape[0])
     np.random.shuffle(inds)
     inds = inds[:N_POINTS]
