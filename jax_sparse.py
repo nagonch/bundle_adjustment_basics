@@ -44,34 +44,32 @@ def get_jacobian(
     camera_indices,
     point_indices,
     dr=None,
-    dcamera_params=None,
-    dpoint_values=None,
+    dx=None,
     eps=1e-9,
 ):
     m = camera_indices.size * 2
     n = n_cameras * 9 + n_points * 3
     J = lil_matrix((m, n), dtype=float)
 
-    if dr is None or dcamera_params is None or dpoint_values is None:
+    if dr is None or dx:
         dr = np.ones(shape=(points_2d.shape[0] * 2,))
-        dcamera_params = np.ones(shape=(n_cameras * 9,))
-        dpoint_values = np.ones(shape=(n_points * 3,))
+        dx = np.ones(shape=(n_cameras * 9 + n_points * 3,))
 
     i = np.arange(camera_indices.size)
     for s in range(9):
         J[2 * i, camera_indices * 9 + s] = dr[2 * i] / (
-            dcamera_params[camera_indices * 9 + s] + eps
+            dx[camera_indices * 9 + s] + eps
         )
         J[2 * i + 1, camera_indices * 9 + s] = dr[2 * i + 1] / (
-            dcamera_params[camera_indices * 9 + s] + eps
+            dx[camera_indices * 9 + s] + eps
         )
 
     for s in range(3):
         J[2 * i, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i] / (
-            dpoint_values[point_indices * 3 + s] + eps
+            dx[n_cameras * 9 + point_indices * 3 + s] + eps
         )
         J[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i] / (
-            dpoint_values[point_indices * 3 + s] + eps
+            dx[n_cameras * 9 + point_indices * 3 + s] + eps
         )
     return J
 
