@@ -63,7 +63,6 @@ if __name__ == "__main__":
     dr = np.ones(shape=(points_2d.shape[0] * 2,))
     dcamera_params = np.ones(shape=(n_cameras * 9,))
     dpoint_values = np.ones(shape=(n_points * 3,))
-    raise
     print(
         get_jacobian(
             n_cameras,
