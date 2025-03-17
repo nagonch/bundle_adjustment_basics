@@ -194,7 +194,8 @@ def get_opt_x_LM(
     n_points,
     ftol=1e-4,
     max_iter=1000,
-    mu=1e-3,
+    mu=1,
+    tau=1e-6,
 ):
     x_params = get_x_vector(camera_params, points_3d)
     residual = res_prev = fun(
@@ -212,74 +213,45 @@ def get_opt_x_LM(
     print(f"loss start: {loss_prev:.5e}")
     loss_prev += 2 * ftol * loss_prev
     for i in range(max_iter):
-        mu = 0.1  # Initial damping
-        tau = 1e-6  # Scaling factor
-        for i in range(max_iter):
-            JTJ = J.T @ J
-            JTr = J.T @ residual
-
-            # Add damping to diagonal
-            diag = JTJ.diagonal().copy()
-            JTJ += mu * sp.diags(diag + tau * np.ones_like(diag))
-
-            try:
-                delta = sp.linalg.spsolve(JTJ, -JTr)
-            except np.linalg.LinAlgError:
-                delta = sp.linalg.lsqr(JTJ, -JTr)[0]
-
-            x_new = x_params + delta
-            new_loss = fun(
-                x_new, n_cameras, n_points, camera_indices, point_indices, points_2d
-            )(x_new)
-
-            predicted_reduction = -delta.T @ (JTr + 0.5 * JTJ @ delta)
-            rho = (loss_prev - new_loss) / (predicted_reduction + 1e-6)
-
-            if rho > 0.75:
-                mu *= 0.5
-            elif rho < 0.25:
-                mu *= 2.0
-
-            if new_loss < loss_prev:
-                x_params = x_new
-                loss_prev = new_loss
-                J = get_jacobian(
-                    n_cameras,
-                    n_points,
-                    camera_indices,
-                    point_indices,
-                    camera_params,
-                    points_3d,
-                )
-            else:
-                mu *= 2.0
-    for i in range(max_iter):
         JTJ = J.T @ J
         JTr = J.T @ residual
-        delta = lsqr(JTJ + mu * sp.eye(JTJ.shape[0]), -JTr)[0]
-        x_new = x_params - delta
-        residual = fun(
+
+        # Add damping to diagonal
+        diag = JTJ.diagonal().copy()
+        JTJ += mu * sp.diags(diag + tau * np.ones_like(diag))
+
+        try:
+            delta = sp.linalg.spsolve(JTJ, -JTr)
+        except np.linalg.LinAlgError:
+            delta = sp.linalg.lsqr(JTJ, -JTr)[0]
+
+        x_new = x_params + delta
+        new_loss = fun(
             x_new, n_cameras, n_points, camera_indices, point_indices, points_2d
         )
-        res_prev = residual
-        loss_val = (residual**2).sum()
-        print(f"{i}, {loss_val:.5e}, {mu:.3e}")
-        loss_drop = loss_prev - loss_val
-        if loss_drop <= 0:
-            mu *= 10
-        else:
-            mu /= 10
+        new_loss = (new_loss**2).sum()
+        print(f"loss {i}: {new_loss:.5e}, {mu}")
+        predicted_reduction = -delta.T @ (JTr + 0.5 * JTJ @ delta)
+        rho = (loss_prev - new_loss) / (predicted_reduction + 1e-6)
+
+        if rho > 0.75:
+            mu *= 0.5
+        elif rho < 0.25:
+            mu *= 2.0
+
+        if new_loss < loss_prev:
             x_params = x_new
-        loss_prev = loss_val
-        camera_params, points_3d = get_params_and_points(x_new, n_cameras, n_points)
-        J = get_jacobian(
-            n_cameras,
-            n_points,
-            camera_indices,
-            point_indices,
-            camera_params,
-            points_3d,
-        )
+            loss_prev = new_loss
+            J = get_jacobian(
+                n_cameras,
+                n_points,
+                camera_indices,
+                point_indices,
+                camera_params,
+                points_3d,
+            )
+        else:
+            mu *= 2.0
 
     return x_params
 
