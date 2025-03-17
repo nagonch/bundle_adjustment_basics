@@ -81,7 +81,7 @@ def get_opt_x_LM(
     n_points,
     ftol=1e-4,
     max_iter=1000,
-    mu=0,
+    mu=1e3,
 ):
     x_params = get_x_vector(camera_params, points_3d)
     residual = res_prev = fun(
