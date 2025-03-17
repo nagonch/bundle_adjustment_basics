@@ -85,13 +85,13 @@ def get_opt_x_LM(
     n_points,
     ftol=1e-4,
     max_iter=1000,
-    mu=10e3,
+    mu=0,
 ):
     x_params = get_x_vector(camera_params, points_3d)
     residual = res_prev = fun(
         x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
     )
-    J = get_jacobian(n_cameras, n_points, camera_indices, point_indices)
+    J = 1 * get_jacobian(n_cameras, n_points, camera_indices, point_indices)
     loss_prev = (res_prev**2).sum()
     print(f"loss start: {loss_prev:.5e}")
     loss_prev += 2 * ftol * loss_prev
@@ -108,12 +108,7 @@ def get_opt_x_LM(
         res_prev = residual
         loss_val = (residual**2).sum()
         print(f"{i}, {loss_val:.5e}")
-        # loss_drop = loss_prev - loss_val
-        # if loss_drop <= 0:
-        #     mu *= 10
-        # else:
-        #     mu /= 10
-        #     x_params = x_new
+        loss_drop = loss_prev - loss_val
         loss_prev = loss_val
 
     return x_params
@@ -134,10 +129,11 @@ if __name__ == "__main__":
     N_POINTS = 10000
     inds = np.arange(points_2d.shape[0])
     np.random.shuffle(inds)
+    inds = np.load("inds.npy")
     inds = inds[:N_POINTS]
-    points_2d = points_2d[inds]
-    camera_indices = camera_indices[inds]
-    point_indices = point_indices[inds]
+    # points_2d = points_2d[inds]
+    # camera_indices = camera_indices[inds]
+    # point_indices = point_indices[inds]
     camera_indices, point_indices = camera_indices.astype(
         np.int32
     ), point_indices.astype(np.int32)
