@@ -208,7 +208,7 @@ if __name__ == "__main__":
     # except KeyboardInterrupt:
     #     pass
 
-    x_opt = get_opt_x_LM(
+    x_opt = get_opt_x_trf(
         camera_params,
         points_3d,
         camera_indices,
