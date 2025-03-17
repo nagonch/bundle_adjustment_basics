@@ -79,7 +79,7 @@ def optimize_GD(
         loss_drop = jnp.abs(loss_prev - loss_val)
         updates, opt_state = optimizer.update(gradient, opt_state)
         x_vector = optax.apply_updates(x_vector, updates)
-        print(f"{i} loss: {loss_val:.4e}, {ftol * loss_val:.4e}, {loss_drop:.4e}")
+        print(f"{i} loss: {loss_val:.4e}")
         if loss_drop <= ftol * loss_val:
             break
         else:
