@@ -69,7 +69,7 @@ def get_jacobian(
         J[2 * i, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i] / (
             dx[n_cameras * 9 + point_indices * 3 + s] + eps
         )
-        J[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i] / (
+        J[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i + 1] / (
             dx[n_cameras * 9 + point_indices * 3 + s] + eps
         )
     return J
@@ -85,7 +85,7 @@ def get_opt_x_LM(
     n_points,
     ftol=1e-4,
     max_iter=1000,
-    mu=1000,
+    mu=0,
 ):
     x_params = get_x_vector(camera_params, points_3d)
     residual = res_prev = fun(
