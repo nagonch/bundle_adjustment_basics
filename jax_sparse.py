@@ -96,9 +96,9 @@ def get_opt_x_LM(
     loss_prev = np.abs(res_prev).sum()
     loss_prev += 2 * ftol * loss_prev
     for i in range(max_iter):
-        JT_r = J.T @ residual
-        JtJ = J.T @ J
-        delta = lsqr(JtJ + mu * sp.eye(JtJ.shape[0]), -JT_r)[0]
+        JTJ = J.T @ J
+        JTr = J.T @ residual
+        delta = lsqr(JTJ + mu * sp.eye(JTJ.shape[0]), -JTr)[0]
         print(delta.sum())
         x_params -= delta
         residual = fun(
