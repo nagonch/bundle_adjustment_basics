@@ -133,7 +133,7 @@ def bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indice
     return A
 
 
-def get_opt_x(
+def get_opt_x_trf(
     camera_params,
     points_3d,
     camera_indices,
@@ -182,13 +182,13 @@ if __name__ == "__main__":
     print("Total number of parameters: {}".format(n))
     print("Total number of residuals: {}".format(m))
 
-    # VISUALIZE DATA
-    try:
-        visualize_data(points_3d, camera_params)
-    except KeyboardInterrupt:
-        pass
+    # # VISUALIZE DATA
+    # try:
+    #     visualize_data(points_3d, camera_params)
+    # except KeyboardInterrupt:
+    #     pass
 
-    x_opt = get_opt_x(
+    x_opt = get_opt_x_trf(
         camera_params,
         points_3d,
         camera_indices,
@@ -200,9 +200,9 @@ if __name__ == "__main__":
 
     camera_params = x_opt[: 9 * n_cameras].reshape(n_cameras, 9)
     points_3d = x_opt[9 * n_cameras :].reshape(n_points, 3)
-    np.save("result_points.npy", points_3d)
-    np.save("camera_params.npy", camera_params)
-    try:
-        visualize_data(points_3d, camera_params)
-    except KeyboardInterrupt:
-        pass
+    # np.save("result_points.npy", points_3d)
+    # np.save("camera_params.npy", camera_params)
+    # try:
+    #     visualize_data(points_3d, camera_params)
+    # except KeyboardInterrupt:
+    #     pass
