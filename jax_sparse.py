@@ -6,6 +6,7 @@ from scipy.sparse import lil_matrix
 from scipy.spatial.transform import Rotation as R
 from scipy.sparse.linalg import lsqr
 import scipy.sparse as sp
+import matplotlib.pyplot as plt
 
 
 def get_x_vector(camera_params, points_3d):
@@ -65,6 +66,7 @@ def get_jacobian(
             dx[camera_indices * 9 + s] + eps
         )
 
+    i = np.arange(point_indices.size)
     for s in range(3):
         J[2 * i, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i] / (
             dx[n_cameras * 9 + point_indices * 3 + s] + eps
@@ -131,9 +133,9 @@ if __name__ == "__main__":
     np.random.shuffle(inds)
     inds = np.load("inds.npy")
     inds = inds[:N_POINTS]
-    # points_2d = points_2d[inds]
-    # camera_indices = camera_indices[inds]
-    # point_indices = point_indices[inds]
+    points_2d = points_2d[inds]
+    camera_indices = camera_indices[inds]
+    point_indices = point_indices[inds]
     camera_indices, point_indices = camera_indices.astype(
         np.int32
     ), point_indices.astype(np.int32)
