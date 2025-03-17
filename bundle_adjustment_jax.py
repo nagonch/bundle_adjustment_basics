@@ -5,7 +5,7 @@ import urllib
 from jax.scipy.spatial.transform import Rotation as R
 import jax
 import optax
-import jaxopt
+import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
@@ -116,4 +116,5 @@ if __name__ == "__main__":
         n_cameras,
         n_points,
     )
-    print(camera_params_optimized, points_3d_optimized)
+    np.save("result_points_gd.npy", points_3d_optimized)
+    np.save("camera_params_gd.npy", camera_params_optimized)

@@ -220,8 +220,8 @@ if __name__ == "__main__":
 
     camera_params = x_opt[: 9 * n_cameras].reshape(n_cameras, 9)
     points_3d = x_opt[9 * n_cameras :].reshape(n_points, 3)
-    # np.save("result_points.npy", points_3d)
-    # np.save("camera_params.npy", camera_params)
+    np.save("result_points.npy", points_3d)
+    np.save("camera_params.npy", camera_params)
     # try:
     #     visualize_data(points_3d, camera_params)
     # except KeyboardInterrupt:
