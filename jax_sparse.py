@@ -4,6 +4,8 @@ from bundle_adjustment import read_bal_data
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.spatial.transform import Rotation as R
+from scipy.sparse.linalg import lsqr
+import scipy.sparse as sp
 
 
 def get_x_vector(camera_params, points_3d):
