@@ -57,23 +57,17 @@ def get_jacobian(
         dr = np.ones(shape=(points_2d.shape[0] * 2,))
         dx = np.ones(shape=(n_cameras * 9 + n_points * 3,))
 
-    i = np.arange(camera_indices.size)
-    for s in range(9):
-        J[2 * i, camera_indices * 9 + s] = dr[2 * i] / (
-            dx[camera_indices * 9 + s] + eps
-        )
-        J[2 * i + 1, camera_indices * 9 + s] = dr[2 * i + 1] / (
-            dx[camera_indices * 9 + s] + eps
+    for i in range(m):
+        camera_index = camera_indices[i // 2] * 9
+        J[i, camera_index : camera_index + 9] = dr[i] / (
+            dx[camera_index : camera_index + 9] + eps
         )
 
-    i = np.arange(point_indices.size)
-    for s in range(3):
-        J[2 * i, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i] / (
-            dx[n_cameras * 9 + point_indices * 3 + s] + eps
+        point_index = point_indices[i // 2] * 3
+        J[i, n_cameras * 9 + point_index : n_cameras * 9 + point_index + 3] = dr[i] / (
+            dx[n_cameras * 9 + point_index : n_cameras * 9 + point_index + 3] + eps
         )
-        J[2 * i + 1, n_cameras * 9 + point_indices * 3 + s] = dr[2 * i + 1] / (
-            dx[n_cameras * 9 + point_indices * 3 + s] + eps
-        )
+
     return J
 
 
