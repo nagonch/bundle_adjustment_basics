@@ -33,9 +33,11 @@ def project(points, camera_params):
 
 
 def fun(params, n_cameras, n_points, camera_indices, point_indices, points_2d):
-    params, points = get_params_and_points(x_vector, n_cameras, n_points)
+    params, points = get_params_and_points(params, n_cameras, n_points)
     points_proj = project(points[point_indices], params[camera_indices])
-    return (points_proj - points_2d).ravel()
+    result = (points_proj - points_2d).ravel()
+    print(result)
+    return result
 
 
 def get_jacobian(
@@ -87,38 +89,30 @@ def get_opt_x_LM(
     mu=0.1,
 ):
     x_params = get_x_vector(camera_params, points_3d)
-    residual = fun(
+    residual = res_prev = fun(
         x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
     )
-    res_prev = residual
-    x_prev = x_params
     J = get_jacobian(n_cameras, n_points, camera_indices, point_indices)
-    loss_prev = residual.sum()
+    loss_prev = res_prev.sum()
     loss_prev += 2 * ftol * loss_prev
     for i in range(max_iter):
         JT_r = J.T @ residual
         JtJ = J.T @ J
         delta = lsqr(JtJ + mu * sp.eye(JtJ.shape[0]), -JT_r)[0]
         x_params += delta
-        print(J)
-        print(delta)
         residual = fun(
             x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
         )
-        loss_val = residual.sum()
-        print(i, loss_val)
-        loss_drop = np.abs(loss_prev - loss_val)
-        if loss_drop <= ftol * loss_val:
-            break
-        else:
-            loss_prev = loss_val
         dr = residual - res_prev
-        dx = x_params - x_prev
-        print(dr)
-        print(dx)
-        J = get_jacobian(n_cameras, n_points, camera_indices, point_indices, dr, dx)
+        J = get_jacobian(n_cameras, n_points, camera_indices, point_indices, dr, delta)
         res_prev = residual
-        x_prev = x_params
+        loss_val = residual.sum()
+        print(f"{i}, {loss_val:.2e}")
+        loss_drop = np.abs(loss_prev - loss_val)
+        # if loss_drop <= ftol * loss_val:
+        #     break
+        # else:
+        loss_prev = loss_val
 
     return x_params
 
