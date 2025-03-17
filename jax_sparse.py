@@ -212,6 +212,48 @@ def get_opt_x_LM(
     print(f"loss start: {loss_prev:.5e}")
     loss_prev += 2 * ftol * loss_prev
     for i in range(max_iter):
+        mu = 0.1  # Initial damping
+        tau = 1e-6  # Scaling factor
+        for i in range(max_iter):
+            JTJ = J.T @ J
+            JTr = J.T @ residual
+
+            # Add damping to diagonal
+            diag = JTJ.diagonal().copy()
+            JTJ += mu * sp.diags(diag + tau * np.ones_like(diag))
+
+            try:
+                delta = sp.linalg.spsolve(JTJ, -JTr)
+            except np.linalg.LinAlgError:
+                delta = sp.linalg.lsqr(JTJ, -JTr)[0]
+
+            x_new = x_params + delta
+            new_loss = fun(
+                x_new, n_cameras, n_points, camera_indices, point_indices, points_2d
+            )(x_new)
+
+            predicted_reduction = -delta.T @ (JTr + 0.5 * JTJ @ delta)
+            rho = (loss_prev - new_loss) / (predicted_reduction + 1e-6)
+
+            if rho > 0.75:
+                mu *= 0.5
+            elif rho < 0.25:
+                mu *= 2.0
+
+            if new_loss < loss_prev:
+                x_params = x_new
+                loss_prev = new_loss
+                J = get_jacobian(
+                    n_cameras,
+                    n_points,
+                    camera_indices,
+                    point_indices,
+                    camera_params,
+                    points_3d,
+                )
+            else:
+                mu *= 2.0
+    for i in range(max_iter):
         JTJ = J.T @ J
         JTr = J.T @ residual
         delta = lsqr(JTJ + mu * sp.eye(JTJ.shape[0]), -JTr)[0]
@@ -253,6 +295,15 @@ if __name__ == "__main__":
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
         np.array(array, dtype=np.float64) for array in data
     ]
+
+    SCALE_ROT = 1e2
+    SCALE_TRANS = 1e1
+    SCALE_F = 1e-3
+
+    camera_params[:, :3] *= SCALE_ROT  # Rotation
+    camera_params[:, 3:6] *= SCALE_TRANS  # Translation
+    camera_params[:, 6] *= SCALE_F  # Focal length
+
     # N_POINTS = points_2d.shape[0]
     N_POINTS = 10000
     inds = np.arange(points_2d.shape[0])
@@ -281,4 +332,8 @@ if __name__ == "__main__":
         n_cameras,
         n_points,
     )
-    # print(get_params_and_points(x_vector, n_cameras, n_points))
+    camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
+    camera_params[:, :3] /= SCALE_ROT
+    camera_params[:, 3:6] /= SCALE_TRANS
+    camera_params[:, 6] /= SCALE_F
+    print(camera_params, points_3d)
