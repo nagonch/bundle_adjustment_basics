@@ -51,7 +51,7 @@ def get_jacobian(
     n = n_cameras * 9 + n_points * 3
     J = lil_matrix((m, n), dtype=float)
 
-    if dr is None or dx:
+    if dr is None or dx is None:
         dr = np.ones(shape=(points_2d.shape[0] * 2,))
         dx = np.ones(shape=(n_cameras * 9 + n_points * 3,))
 
@@ -90,6 +90,8 @@ def get_opt_x_LM(
     residual = fun(
         x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
     )
+    res_prev = residual
+    x_prev = x_params
     J = get_jacobian(n_cameras, n_points, camera_indices, point_indices)
     loss_prev = residual.sum()
     loss_prev += 2 * ftol * loss_prev
@@ -98,6 +100,8 @@ def get_opt_x_LM(
         JtJ = J.T @ J
         delta = lsqr(JtJ + mu * sp.eye(JtJ.shape[0]), -JT_r)[0]
         x_params += delta
+        print(J)
+        print(delta)
         residual = fun(
             x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
         )
@@ -108,12 +112,13 @@ def get_opt_x_LM(
             break
         else:
             loss_prev = loss_val
-        camera_params_i = x_opt[: 9 * n_cameras].reshape(n_cameras, 9)
-        points_3d_i = x_opt[9 * n_cameras :].reshape(n_points, 3)
-        d_camera_params = camera_params_i - camera_params
-        d_points_3d = points_3d_i - points_3d
-        camera_params = d_camera_params
-        points_3d = d_points_3d
+        dr = residual - res_prev
+        dx = x_params - x_prev
+        print(dr)
+        print(dx)
+        J = get_jacobian(n_cameras, n_points, camera_indices, point_indices, dr, dx)
+        res_prev = residual
+        x_prev = x_params
 
     return x_params
 
