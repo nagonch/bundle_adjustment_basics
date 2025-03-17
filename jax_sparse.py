@@ -3,6 +3,31 @@ import os
 from bundle_adjustment import read_bal_data
 import numpy as np
 from scipy.sparse import lil_matrix
+from scipy.spatial.transform import Rotation as R
+
+
+def get_x_vector(camera_params, points_3d):
+    return np.hstack((camera_params.ravel(), points_3d.ravel()))
+
+
+def get_params_and_points(x_vector, n_cameras, n_points):
+    camera_params = x_vector[: n_cameras * 9].reshape((n_cameras, 9))
+    points_3d = x_vector[n_cameras * 9 :].reshape((n_points, 3))
+    return camera_params, points_3d
+
+
+def project(points, camera_params):
+    rotations = R.from_rotvec(camera_params[:, :3]).as_matrix()
+    points_proj = np.matvec(rotations, points)
+    points_proj += camera_params[:, 3:6]
+    points_proj = -points_proj[:, :2] / points_proj[:, 2, np.newaxis]
+    f = camera_params[:, 6]
+    k1 = camera_params[:, 7]
+    k2 = camera_params[:, 8]
+    n = np.sum(points_proj**2, axis=1)
+    r = 1 + k1 * n + k2 * n**2
+    points_proj *= (r * f)[:, np.newaxis]
+    return points_proj
 
 
 def get_jacobian(
@@ -63,14 +88,5 @@ if __name__ == "__main__":
     dr = np.ones(shape=(points_2d.shape[0] * 2,))
     dcamera_params = np.ones(shape=(n_cameras * 9,))
     dpoint_values = np.ones(shape=(n_points * 3,))
-    print(
-        get_jacobian(
-            n_cameras,
-            n_points,
-            camera_indices,
-            point_indices,
-            dr,
-            dcamera_params,
-            dpoint_values,
-        )
-    )
+    x_vector = get_x_vector(camera_params, points_3d)
+    print(get_params_and_points(x_vector, n_cameras, n_points))
