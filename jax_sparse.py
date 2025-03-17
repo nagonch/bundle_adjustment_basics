@@ -1,12 +1,8 @@
-import jax.numpy as jnp
 import urllib
 import os
 from bundle_adjustment import read_bal_data
-import jax
-from jax.experimental import sparse
-
-
-jax.config.update("jax_enable_x64", True)
+import numpy as np
+from scipy.sparse import lil_matrix
 
 
 def get_jacobian(
@@ -20,9 +16,10 @@ def get_jacobian(
 ):
     m = camera_indices.size * 2
     n = n_cameras * 9 + n_points * 3
-    J = sparse.COO(indices=([], []), values=[], shape=(m, n))
+    J = lil_matrix((m, n), dtype=int)
+
     if dr is None or dcamera_params is None or dpoint_indices is None:
-        i = jnp.arange(camera_indices.size)
+        i = np.arange(camera_indices.size)
         for s in range(9):
             J[2 * i, camera_indices * 9 + s] = 1
             J[2 * i + 1, camera_indices * 9 + s] = 1
@@ -42,10 +39,17 @@ if __name__ == "__main__":
 
     data = read_bal_data(filename)
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
-        jnp.array(array, dtype=jnp.float64) for array in data
+        np.array(array, dtype=np.float64) for array in data
     ]
     camera_indices, point_indices = camera_indices.astype(
-        jnp.int32
-    ), point_indices.astype(jnp.int32)
+        np.int32
+    ), point_indices.astype(np.int32)
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
+
+    get_jacobian(
+        n_cameras,
+        n_points,
+        camera_indices,
+        point_indices,
+    )
