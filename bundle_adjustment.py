@@ -180,50 +180,6 @@ def get_opt_x_trf(
     return x
 
 
-def get_opt_x_LM(
-    camera_params,
-    points_3d,
-    camera_indices,
-    point_indices,
-    points_2d,
-    n_cameras,
-    n_points,
-    ftol=1e-4,
-    max_iter=1000,
-    mu=0.1,
-):
-    x_params = np.hstack((camera_params.ravel(), points_3d.ravel()))
-    residual = fun(
-        x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
-    )
-    J = bundle_adjustment_sparsity(n_cameras, n_points, camera_indices, point_indices)
-    loss_prev = residual.sum()
-    loss_prev += 2 * ftol * loss_prev
-    for i in range(max_iter):
-        JT_r = J.T @ residual
-        JtJ = J.T @ J
-        delta = lsqr(JtJ + mu * sp.eye(JtJ.shape[0]), -JT_r)[0]
-        x_params += delta
-        residual = fun(
-            x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
-        )
-        loss_val = residual.sum()
-        print(i, loss_val)
-        loss_drop = np.abs(loss_prev - loss_val)
-        if loss_drop <= ftol * loss_val:
-            break
-        else:
-            loss_prev = loss_val
-        camera_params_i = x_opt[: 9 * n_cameras].reshape(n_cameras, 9)
-        points_3d_i = x_opt[9 * n_cameras :].reshape(n_points, 3)
-        d_camera_params = camera_params_i - camera_params
-        d_points_3d = points_3d_i - points_3d
-        camera_params = d_camera_params
-        points_3d = d_points_3d
-
-    return x_params
-
-
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
