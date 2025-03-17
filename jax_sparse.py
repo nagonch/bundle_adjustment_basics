@@ -93,6 +93,7 @@ def get_opt_x_LM(
     )
     J = get_jacobian(n_cameras, n_points, camera_indices, point_indices)
     loss_prev = (res_prev**2).sum()
+    print(f"loss start: {loss_prev:.2e}")
     loss_prev += 2 * ftol * loss_prev
     for i in range(max_iter):
         JTJ = J.T @ J

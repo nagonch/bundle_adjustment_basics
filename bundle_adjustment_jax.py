@@ -45,7 +45,7 @@ def loss(
 ):
     camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
     projected_points = project(points_3d[point_indices], camera_params[camera_indices])
-    error = jnp.linalg.norm(projected_points - points_2d, axis=1) ** 2
+    error = (projected_points - points_2d) ** 2
     if aggregate_loss:
         error = error.sum()
     return error
@@ -68,6 +68,7 @@ def optimize_GD(
     loss_prev = loss(
         x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
     )
+    print(f"loss start: {loss_prev:.2e}")
     loss_prev += 2 * ftol * loss_prev
     optimizer = optax.adam(learning_rate)
     opt_state = optimizer.init(x_vector)
