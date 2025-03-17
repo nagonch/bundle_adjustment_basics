@@ -124,10 +124,18 @@ if __name__ == "__main__":
     if not os.path.isfile(filename):
         urllib.request.urlretrieve(dataset_url, filename)
 
+    N_POINTS = 10000
+
     data = read_bal_data(filename)
     camera_params, points_3d, camera_indices, point_indices, points_2d = [
         np.array(array, dtype=np.float64) for array in data
     ]
+    inds = np.arange(points_2d.shape[0])
+    np.random.shuffle(inds)
+    inds = inds[:10000]
+    points_2d = points_2d[inds]
+    camera_indices = camera_indices[inds]
+    point_indices = point_indices[inds]
     camera_indices, point_indices = camera_indices.astype(
         np.int32
     ), point_indices.astype(np.int32)
