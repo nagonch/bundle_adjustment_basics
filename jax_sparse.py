@@ -105,6 +105,7 @@ def get_opt_x_LM(
         loss_val = (residual**2).sum()
         print(f"{i}, {loss_val:.5e}")
         loss_drop = loss_prev - loss_val
+        x_params = x_new
         loss_prev = loss_val
 
     return x_params
