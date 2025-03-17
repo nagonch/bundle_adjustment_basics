@@ -119,12 +119,17 @@ def fun(params, n_cameras, n_points, camera_indices, point_indices, points_2d):
 
 
 def bundle_adjustment_sparsity(
-    n_cameras, n_points, camera_indices, point_indices, diff=None
+    n_cameras,
+    n_points,
+    camera_indices,
+    point_indices,
+    d_camera_params=None,
+    d_points_3d=None,
 ):
     m = camera_indices.size * 2
     n = n_cameras * 9 + n_points * 3
     A = lil_matrix((m, n), dtype=int)
-    if diff is None:
+    if d_camera_params is None or d_points_3d is None:
         i = np.arange(camera_indices.size)
         for s in range(9):
             A[2 * i, camera_indices * 9 + s] = 1
@@ -209,6 +214,13 @@ def get_opt_x_LM(
             break
         else:
             loss_prev = loss_val
+        camera_params_i = x_opt[: 9 * n_cameras].reshape(n_cameras, 9)
+        points_3d_i = x_opt[9 * n_cameras :].reshape(n_points, 3)
+        d_camera_params = camera_params_i - camera_params
+        d_points_3d = points_3d_i - points_3d
+        camera_params = d_camera_params
+        points_3d = d_points_3d
+
     return x_params
 
 
