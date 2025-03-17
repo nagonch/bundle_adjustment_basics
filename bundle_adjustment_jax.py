@@ -89,32 +89,6 @@ def optimize_GD(
     return camera_params_optimized, points_3d_optimized
 
 
-def loss_jaxopt(
-    x_vector,
-):
-    camera_params, points_3d = get_params_and_points(x_vector, n_cameras, n_points)
-    projected_points = project(points_3d[point_indices], camera_params[camera_indices])
-    error = jnp.linalg.norm(projected_points - points_2d, axis=1) ** 2
-    error = error.sum()
-    return error
-
-
-def optimize_GN(
-    camera_params,
-    points_3d,
-    ftol=1e-4,
-):
-    x_vector = get_x_vector(camera_params, points_3d)
-    solver = jaxopt.GaussNewton(loss_jaxopt, tol=ftol, verbose=True, jit=False)
-    params, state = solver.run(
-        init_params=x_vector,
-    )
-    camera_params_optimized, points_3d_optimized = get_params_and_points(
-        params, n_cameras, n_points
-    )
-    return camera_params_optimized, points_3d_optimized
-
-
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -132,8 +106,13 @@ if __name__ == "__main__":
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
-    camera_params_optimized, points_3d_optimized = optimize_GN(
+    camera_params_optimized, points_3d_optimized = optimize_GD(
         camera_params,
         points_3d,
+        camera_indices,
+        point_indices,
+        points_2d,
+        n_cameras,
+        n_points,
     )
     print(camera_params_optimized, points_3d_optimized)
