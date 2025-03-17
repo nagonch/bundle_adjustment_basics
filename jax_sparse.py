@@ -132,7 +132,7 @@ if __name__ == "__main__":
     ]
     inds = np.arange(points_2d.shape[0])
     np.random.shuffle(inds)
-    inds = inds[:10000]
+    inds = inds[:N_POINTS]
     points_2d = points_2d[inds]
     camera_indices = camera_indices[inds]
     point_indices = point_indices[inds]
