@@ -90,6 +90,43 @@ def optimize_GD(
     return camera_params_optimized, points_3d_optimized
 
 
+def optimize_LM(
+    camera_params,
+    points_3d,
+    camera_indices,
+    point_indices,
+    points_2d,
+    n_cameras,
+    n_points,
+    learning_rate=1e-2,
+    ftol=1e-4,
+    max_iter=1000,
+):
+    x_vector = get_x_vector(camera_params, points_3d)
+    forward = jax.value_and_grad(loss)
+    loss_prev = loss(
+        x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
+    )
+    print(f"loss start: {loss_prev:.2e}")
+    loss_prev += 2 * ftol * loss_prev
+    for i in range(max_iter):
+        loss_val, gradient = forward(
+            x_vector, camera_indices, point_indices, points_2d, n_cameras, n_points
+        )
+        print(gradient)
+        raise
+        loss_drop = jnp.abs(loss_prev - loss_val)
+        print(f"{i} loss: {loss_val:.4e}, {ftol * loss_val:.4e}, {loss_drop:.4e}")
+        if loss_drop <= ftol * loss_val:
+            break
+        else:
+            loss_prev = loss_val
+    camera_params_optimized, points_3d_optimized = get_params_and_points(
+        x_vector, n_cameras, n_points
+    )
+    return camera_params_optimized, points_3d_optimized
+
+
 if __name__ == "__main__":
     # LOAD DATA
     dataset_url = "https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-88-64298-pre.txt.bz2"
@@ -107,7 +144,7 @@ if __name__ == "__main__":
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
-    camera_params_optimized, points_3d_optimized = optimize_GD(
+    camera_params_optimized, points_3d_optimized = optimize_LM(
         camera_params,
         points_3d,
         camera_indices,
