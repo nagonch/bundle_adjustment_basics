@@ -47,6 +47,10 @@ if __name__ == "__main__":
     n_cameras = camera_params.shape[0]
     n_points = points_3d.shape[0]
 
+    dr = np.random.normal(size=(points_2d.shape[0] * 2,))
+    dcamera_params = np.random.normal(size=(n_cameras * 9,))
+    dpoint_values = np.random.normal(size=(n_points * 3,))
+
     get_jacobian(
         n_cameras,
         n_points,
