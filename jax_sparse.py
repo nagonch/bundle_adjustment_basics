@@ -85,7 +85,7 @@ def get_opt_x_LM(
     n_points,
     ftol=1e-4,
     max_iter=1000,
-    mu=0,
+    mu=1e-3,
 ):
     x_params = get_x_vector(camera_params, points_3d)
     residual = res_prev = fun(
@@ -100,16 +100,21 @@ def get_opt_x_LM(
         JTr = J.T @ residual
         delta = lsqr(JTJ + mu * sp.eye(JTJ.shape[0]), -JTr)[0]
         print(delta.sum())
-        x_params -= delta
+        x_new = x_params - delta
         residual = fun(
-            x_params, n_cameras, n_points, camera_indices, point_indices, points_2d
+            x_new, n_cameras, n_points, camera_indices, point_indices, points_2d
         )
         dr = residual - res_prev
         J = get_jacobian(n_cameras, n_points, camera_indices, point_indices, dr, delta)
         res_prev = residual
         loss_val = (residual**2).sum()
         print(f"{i}, {loss_val:.2e}")
-        loss_drop = np.abs(loss_prev - loss_val)
+        loss_drop = loss_prev - loss_val
+        if loss_drop <= 0:
+            mu *= 10
+        else:
+            mu /= 10
+            x_params = x_new
         # if loss_drop <= ftol * loss_val:
         #     break
         # else:
