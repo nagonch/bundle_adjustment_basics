@@ -1,1 +1,1 @@
-# jupyter_sketches
+# bundle_adjustment_basics
